@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}HDI Predictor &mdash; Predict{% endblock %}
+
+{% block content %}
+<section class="section-tight">
+  <div class="container">
+    <span class="eyebrow">Prediction instrument</span>
+    <h1 style="font-size: clamp(26px, 3.4vw, 36px);">Estimate a country's HDI</h1>
+    <p class="text-soft" style="max-width: 62ch;">
+      Enter the four indicators below, or load a real country's 2021 figures to
+      see how the model reads them. Predictions are saved to your
+      <a href="{{ url_for('history_page') }}" style="color:var(--steel); font-weight:600;">History</a> log.
+    </p>
+  </div>
+</section>
+
+<section class="section section-tight">
+  <div class="container predict-layout">
+
+    <div class="card">
+      <div class="field">
+        <label for="countrySelect">Load a real country (optional)</label>
+        <select id="countrySelect">
+          <option value="">&mdash; choose a country to autofill &mdash;</option>
+          {% for c in countries %}
+          <option value="{{ loop.index0 }}">{{ c.country }} &middot; {{ c.tier }} ({{ "%.3f"|format(c.hdi) }})</option>
+          {% endfor %}
+        </select>
+        <p class="hint">This only pre-fills the form &mdash; the model still recomputes the prediction from scratch.</p>
+      </div>
+
+      <form id="predictForm" novalidate>
+        <div class="field">
+          <label for="life_exp">{{ feature_labels.life_exp }}</label>
+          <input type="number" id="life_exp" name="life_exp" step="0.1" min="1" max="100"
+                 placeholder="e.g. 72.5" required aria-describedby="life_exp_hint">
+          <p class="hint" id="life_exp_hint">Typical range: 50 (Low) to 85 (Very High) years.</p>
+        </div>
+
+        <div class="field">
+          <label for="expected_schooling">{{ feature_labels.expected_schooling }}</label>
+          <input type="number" id="expected_schooling" name="expected_schooling" step="0.1" min="0" max="25"
+                 placeholder="e.g. 13.5" required>
+          <p class="hint">Years a child entering school today is expected to receive.</p>
+        </div>
+
+        <div class="field">
+          <label for="mean_schooling">{{ feature_labels.mean_schooling }}</label>
+          <input type="number" id="mean_schooling" name="mean_schooling" step="0.1" min="0" max="20"
+                 placeholder="e.g. 8.4" required>
+          <p class="hint">Average years of schooling completed by adults 25+.</p>
+        </div>
+
+        <div class="field">
+          <label for="gni">{{ feature_labels.gni }}</label>
+          <input type="number" id="gni" name="gni" step="1" min="1"
+                 placeholder="e.g. 18000" required>
+          <p class="hint">Gross National Income per capita, PPP-adjusted USD.</p>
+        </div>
+
+        <div class="field">
+          <label for="label">Label this scenario (optional)</label>
+          <input type="text" id="label" name="label" placeholder="e.g. Post-reform projection 2030" maxlength="60">
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="predictBtn" style="width:100%; justify-content:center;">
+          Predict HDI
+        </button>
+      </form>
+    </div>
+
+    <div class="result-panel card" aria-live="polite">
+      <span class="eyebrow">Result</span>
+      <div id="resultPlaceholder" class="result-placeholder">
+        Fill in the form and press <strong>Predict HDI</strong> to see the score, tier, and gauge appear here.
+      </div>
+      <div id="resultContent" style="display:none;">
+        <div class="gauge-wrap">
+          <canvas id="gaugeChart" height="160"></canvas>
+          <div class="gauge-value" id="gaugeValue">0.000</div>
+          <div class="gauge-caption">Predicted HDI score</div>
+        </div>
+        <div style="text-align:center; margin: 10px 0 6px;">
+          <span class="badge" id="tierBadge">&mdash;</span>
+        </div>
+        <p id="tierNote" class="text-soft" style="font-size: 13.5px; text-align:center;"></p>
+        <div style="height:1px;background:var(--line);margin:16px 0;"></div>
+        <p class="text-soft" style="font-size:12.5px;">
+          Model: {{ meta.model_type }} (R&sup2; {{ meta.r2_score }}) &middot; saved to History automatically.
+        </p>
+        <a href="{{ url_for('history_page') }}" class="btn btn-outline" style="width:100%; justify-content:center; margin-top: 8px;">View in History</a>
+      </div>
+      <div id="resultError"></div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+  window.HDI_COUNTRIES = {{ countries | tojson }};
+  window.HDI_TIER_COLORS = {{ tier_colors | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/predict.js') }}"></script>
+{% endblock %}

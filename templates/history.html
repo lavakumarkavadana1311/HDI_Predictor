@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}HDI Predictor &mdash; History{% endblock %}
+
+{% block content %}
+<section class="section-tight">
+  <div class="container">
+    <span class="eyebrow">Prediction log</span>
+    <h1 style="font-size: clamp(26px, 3.4vw, 36px);">History</h1>
+    <p class="text-soft" style="max-width: 62ch;">
+      Showing the {{ rows|length }} most recent of {{ total_count }} predictions
+      (log keeps the latest {{ display_limit }} visible here).
+    </p>
+  </div>
+</section>
+
+<section class="section-tight">
+  <div class="container">
+    <div class="card" style="margin-bottom: 24px;">
+      <span class="eyebrow">Fig. 05</span>
+      <h3 class="mt-0">Predicted HDI over time</h3>
+      <canvas id="trendChart" height="90" role="img" aria-label="Line chart of predicted HDI over time"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="ledger-toolbar">
+        <div class="tier-filters" role="group" aria-label="Filter by development tier">
+          <button class="tier-filter-btn active" data-tier="all">All</button>
+          {% for tier in tier_colors.keys() %}
+          <button class="tier-filter-btn" data-tier="{{ tier }}">{{ tier }}</button>
+          {% endfor %}
+        </div>
+        {% if rows %}
+        <button class="btn btn-danger-outline" id="clearHistoryBtn">Clear all history</button>
+        {% endif %}
+      </div>
+
+      {% if rows %}
+      <div style="overflow-x:auto;">
+        <table class="ledger" id="ledgerTable">
+          <thead>
+            <tr>
+              <th>Logged</th>
+              <th>Label / Country</th>
+              <th>Life exp.</th>
+              <th>Sch. (exp.)</th>
+              <th>Sch. (mean)</th>
+              <th>GNI p.c.</th>
+              <th>HDI</th>
+              <th>Tier</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+            <tr data-tier="{{ r.predicted_tier }}" data-id="{{ r.id }}">
+              <td class="num text-soft" style="font-size:12.5px;">{{ r.created_at[:16].replace('T',' ') }}</td>
+              <td>{{ r.label or "—" }}</td>
+              <td class="num">{{ "%.1f"|format(r.life_exp) }}</td>
+              <td class="num">{{ "%.1f"|format(r.expected_schooling) }}</td>
+              <td class="num">{{ "%.1f"|format(r.mean_schooling) }}</td>
+              <td class="num">{{ "%.0f"|format(r.gni) }}</td>
+              <td class="num" style="font-weight:700;">{{ "%.3f"|format(r.predicted_hdi) }}</td>
+              <td><span class="badge" style="background:{{ tier_colors.get(r.predicted_tier) }}">{{ r.predicted_tier }}</span></td>
+              <td><button class="row-delete-btn" data-id="{{ r.id }}">Delete</button></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <h3>No predictions logged yet</h3>
+        <p>Run a scenario on the Predict dashboard and it will show up here.</p>
+        <a href="{{ url_for('predict_page') }}" class="btn btn-gold">Go to Predict &rarr;</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+  window.HDI_HISTORY_ROWS = {{ rows | tojson }};
+  window.HDI_TIER_COLORS = {{ tier_colors | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/history.js') }}"></script>
+{% endblock %}

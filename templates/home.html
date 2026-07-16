@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}HDI Predictor &mdash; Home{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">Human Development Index &middot; UNDP 2021 Dataset</span>
+    <h1>Mapping human development, one country at a time.</h1>
+    <p class="lede">
+      The Human Development Index distills life expectancy, education, and income
+      into a single 0&ndash;1 score. This atlas trains a regression model on
+      {{ stats.country_count }} countries to predict HDI &mdash; and the development
+      tier it falls into &mdash; from four measurable indicators.
+    </p>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="value">{{ stats.country_count }}</div>
+        <div class="label">Countries charted</div>
+      </div>
+      <div class="hero-stat">
+        <div class="value">{{ stats.avg_hdi }}</div>
+        <div class="label">Global average HDI</div>
+      </div>
+      <div class="hero-stat">
+        <div class="value">{{ (meta.r2_score * 100) | round(1) }}%</div>
+        <div class="label">Model R&sup2; accuracy</div>
+      </div>
+      <div class="hero-stat">
+        <div class="value">{{ meta.model_type.replace('Regressor','').replace('Regression','Reg.') }}</div>
+        <div class="label">Trained estimator</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="grid grid-2" style="align-items: start;">
+
+      <div class="card">
+        <span class="eyebrow">Fig. 00</span>
+        <h3 class="mt-0">Tiers of development, worldwide</h3>
+        <p class="text-soft" style="font-size: 14px;">
+          Countries are grouped into four official UNDP tiers based on their HDI score.
+        </p>
+        <canvas id="tierChart" height="220" role="img" aria-label="Donut chart of countries by development tier"></canvas>
+        <div class="chip-legend" style="margin-top: 16px;">
+          {% for tier, color in tier_colors.items() %}
+          <span><i style="background:{{ color }}"></i>{{ tier }} &middot; {{ stats.tier_counts.get(tier, 0) }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Gazetteer</span>
+        <h3 class="mt-0">Highest &amp; lowest ranked</h3>
+        <table class="gazetteer" aria-label="Top and bottom ranked countries by HDI">
+          <thead>
+            <tr><th>Country</th><th>Tier</th><th style="text-align:right;">HDI</th></tr>
+          </thead>
+          <tbody>
+            {% for c in stats.top5 %}
+            <tr>
+              <td>{{ c.country }}</td>
+              <td><span class="badge" style="background:{{ tier_colors.get(c.tier) }}">{{ c.tier }}</span></td>
+              <td class="hdi-val" style="text-align:right;">{{ "%.3f"|format(c.hdi) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div style="height:1px;background:var(--line);margin:14px 0;"></div>
+        <table class="gazetteer" aria-label="Lowest ranked countries by HDI">
+          <tbody>
+            {% for c in stats.bottom5 %}
+            <tr>
+              <td>{{ c.country }}</td>
+              <td><span class="badge" style="background:{{ tier_colors.get(c.tier) }}">{{ c.tier }}</span></td>
+              <td class="hdi-val" style="text-align:right;">{{ "%.3f"|format(c.hdi) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section section-tight" style="background: var(--parchment-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+  <div class="container">
+    <span class="eyebrow">Exploratory analysis</span>
+    <h2 style="margin-top:6px;">Reading the data before modeling it</h2>
+    <div class="grid grid-2" style="margin-top: 24px;">
+      <figure class="figure">
+        <img src="{{ url_for('static', filename='graphs/scatter_plot.png') }}" alt="Scatter plot of life expectancy versus HDI, colored by development tier">
+        <figcaption><span class="fig-no">Fig. 01</span>Life expectancy correlates strongly with HDI, but tiers overlap at the margins.</figcaption>
+      </figure>
+      <figure class="figure">
+        <img src="{{ url_for('static', filename='graphs/correlation_heatmap.png') }}" alt="Correlation heatmap of HDI features">
+        <figcaption><span class="fig-no">Fig. 02</span>Every input feature correlates positively with HDI &mdash; income most weakly in raw form.</figcaption>
+      </figure>
+      <figure class="figure">
+        <img src="{{ url_for('static', filename='graphs/distribution_plot.png') }}" alt="Histogram of HDI score distribution">
+        <figcaption><span class="fig-no">Fig. 03</span>HDI scores cluster around the Medium&ndash;High boundary globally.</figcaption>
+      </figure>
+      <figure class="figure">
+        <img src="{{ url_for('static', filename='graphs/strip_plot.png') }}" alt="Strip plot of HDI scores by development tier">
+        <figcaption><span class="fig-no">Fig. 04</span>Tiers form clearly separated bands once sorted &mdash; a good sign for classification.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="card row-between" style="flex-wrap: wrap; gap: 20px;">
+      <div>
+        <span class="eyebrow">Ready to explore?</span>
+        <h3 class="mt-0" style="margin-bottom: 4px;">Try the predictor on your own scenario</h3>
+        <p class="text-soft mb-0" style="font-size: 14px;">Enter life expectancy, schooling, and income to see the predicted HDI and tier.</p>
+      </div>
+      <a href="{{ url_for('predict_page') }}" class="btn btn-gold">Open Predict dashboard &rarr;</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+const tierData = {{ stats.tier_counts | tojson }};
+const tierColors = {{ tier_colors | tojson }};
+const labels = Object.keys(tierData);
+new Chart(document.getElementById('tierChart'), {
+  type: 'doughnut',
+  data: {
+    labels: labels,
+    datasets: [{
+      data: labels.map(l => tierData[l]),
+      backgroundColor: labels.map(l => tierColors[l]),
+      borderColor: '#FBF7EC',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    cutout: '62%',
+  }
+});
+</script>
+{% endblock %}

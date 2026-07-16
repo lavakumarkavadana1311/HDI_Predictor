@@ -1,0 +1,30 @@
+{
+  "model_type": "LinearRegression",
+  "features": [
+    "life_exp",
+    "expected_schooling",
+    "mean_schooling",
+    "log_gni"
+  ],
+  "feature_display": [
+    "life_exp",
+    "expected_schooling",
+    "mean_schooling",
+    "gni"
+  ],
+  "r2_score": 0.9991,
+  "mae": 0.0033,
+  "trained_at": "2026-07-16T09:35:31.957332+00:00",
+  "n_train": 152,
+  "n_test": 39,
+  "candidates": {
+    "LinearRegression": {
+      "r2": 0.9991,
+      "mae": 0.0033
+    },
+    "RandomForestRegressor": {
+      "r2": 0.971,
+      "mae": 0.0195
+    }
+  }
+}
