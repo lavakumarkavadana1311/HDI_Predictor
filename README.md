@@ -1,6 +1,5 @@
-# HDI Predictor — Human Development Index Predictor
-
-🌐 **Live Demo:** [https://hdi-predictor-71k5.onrender.com](https://hdi-predictor-71k5.onrender.com)
+🌐 **Live Demo:**
+ [https://hdi-predictor-1-wyqk.onrender.com](https://hdi-predictor-1-wyqk.onrender.com)
 
 *(Note: the free hosting tier sleeps after inactivity — the first load may take 10–30 seconds to wake up.)*
 
